@@ -6,7 +6,7 @@ use minesweeper_lib::run;
 fn main() {
     let args: Vec<String> = env::args().collect();
     if args.len() != 4 {
-        eprintln!("Usage: {} <height> <width> <mines>", args[0]);
+        eprintln!("Usage: {} <width> <height> <mines>", args[0]);
         std::process::exit(1);
     }
 
