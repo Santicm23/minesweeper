@@ -8,41 +8,45 @@ pub struct MinesWeeper {
     width: u32,
     height: u32,
     mines: u32,
-    board: Vec<Vec<u32>>,
+    board: Vec<Vec<u8>>,
     mines_board: Vec<Vec<bool>>,
     marked: Vec<Vec<bool>>,
     total_marked: u32,
+    initialized: bool,
+    game_over: bool,
 }
 
 impl MinesWeeper {
     pub fn new(width: u32, height: u32, mines: u32) -> Self {
-        let board = vec![vec![9; width as usize]; height as usize];
-
-        let mut mines_to_place = mines;
-        let mut mines_board = vec![vec![false; width as usize]; height as usize];
-        let mut rng = rand::thread_rng();
-
-        while mines_to_place > 0 {
-            let x = rng.gen_range(0..width);
-            let y = rng.gen_range(0..height);
-
-            if mines_board[y as usize][x as usize] {
-                continue;
-            }
-
-            mines_board[y as usize][x as usize] = true;
-            mines_to_place -= 1;
-        }
-
         Self {
             width,
             height,
             mines,
-            board,
-            mines_board,
+            board: vec![vec![9; width as usize]; height as usize],
+            mines_board: vec![vec![false; width as usize]; height as usize],
             marked: vec![vec![false; width as usize]; height as usize],
             total_marked: 0,
+            initialized: false,
+            game_over: false,
         }
+    }
+
+    fn init_board(&mut self, x: u32, y: u32) {
+        let mut rng = rand::thread_rng();
+
+        let mut mines_to_place = self.mines;
+        while mines_to_place > 0 {
+            let i = rng.gen_range(0..self.width);
+            let j = rng.gen_range(0..self.height);
+
+            if self.mines_board[i as usize][j as usize] || (i == x && j == y) {
+                continue;
+            }
+
+            self.mines_board[y as usize][x as usize] = true;
+            mines_to_place -= 1;
+        }
+        self.initialized = true;
     }
 
     fn count_mines_surrounding(&mut self, x: u32, y: u32) -> u8 {
@@ -75,15 +79,20 @@ impl MinesWeeper {
             return Err(BoardError::InvalidMove);
         }
 
+        if !self.initialized {
+            self.init_board(x, y);
+        }
+
         if self.board[y as usize][x as usize] != 0 {
             return Err(BoardError::MoveAlreadyPlayed);
         }
 
         if self.mines_board[y as usize][x as usize] {
-            return Err(BoardError::GameOver);
+            self.game_over = true;
+            return Ok(());
         }
 
-        self.board[y as usize][x as usize] = self.count_mines_surrounding(x, y) as u32;
+        self.board[y as usize][x as usize] = self.count_mines_surrounding(x, y);
 
         Ok(())
     }
@@ -113,6 +122,10 @@ impl MinesWeeper {
 
     pub fn mines_left(&self) -> u32 {
         self.mines - self.total_marked
+    }
+
+    pub fn is_game_over(&self) -> bool {
+        self.game_over
     }
 }
 
