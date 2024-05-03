@@ -1,1 +1,2 @@
-pub mod input;
+mod input;
+pub use self::input::*;

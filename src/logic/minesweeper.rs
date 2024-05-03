@@ -9,11 +9,12 @@ pub struct MinesWeeper {
     height: u32,
     mines: u32,
     board: Vec<Vec<u8>>,
-    mines_board: Vec<Vec<bool>>,
-    marked: Vec<Vec<bool>>,
+    masked_board: Vec<Vec<bool>>,
+    marked_board: Vec<Vec<bool>>,
     total_marked: u32,
     initialized: bool,
-    game_over: bool,
+    pub game_lost: bool,
+    pub game_won: bool,
 }
 
 impl MinesWeeper {
@@ -22,16 +23,35 @@ impl MinesWeeper {
             width,
             height,
             mines,
-            board: vec![vec![9; width as usize]; height as usize],
-            mines_board: vec![vec![false; width as usize]; height as usize],
-            marked: vec![vec![false; width as usize]; height as usize],
+            board: vec![vec![0; width as usize]; height as usize],
+            masked_board: vec![vec![true; width as usize]; height as usize],
+            marked_board: vec![vec![false; width as usize]; height as usize],
             total_marked: 0,
             initialized: false,
-            game_over: false,
+            game_lost: false,
+            game_won: false,
         }
     }
 
     fn init_board(&mut self, x: u32, y: u32) {
+        self.populate_board(x, y);
+
+        self.masked_board[y as usize][x as usize] = false;
+
+        for i in 0..self.height {
+            for j in 0..self.width {
+                if self.board[i as usize][j as usize] == 9 {
+                    continue;
+                }
+
+                self.board[i as usize][j as usize] = self.count_mines_surrounding(j, i);
+            }
+        }
+
+        self.initialized = true;
+    }
+
+    fn populate_board(&mut self, x: u32, y: u32) {
         let mut rng = rand::thread_rng();
 
         let mut mines_to_place = self.mines;
@@ -39,14 +59,13 @@ impl MinesWeeper {
             let i = rng.gen_range(0..self.width);
             let j = rng.gen_range(0..self.height);
 
-            if self.mines_board[i as usize][j as usize] || (i == x && j == y) {
+            if self.board[i as usize][j as usize] == 9 || (i == x && j == y) {
                 continue;
             }
 
-            self.mines_board[i as usize][j as usize] = true;
+            self.board[i as usize][j as usize] = 9;
             mines_to_place -= 1;
         }
-        self.initialized = true;
     }
 
     fn count_mines_surrounding(&mut self, x: u32, y: u32) -> u8 {
@@ -65,7 +84,7 @@ impl MinesWeeper {
                     continue;
                 }
 
-                if self.mines_board[y as usize][x as usize] {
+                if self.board[y as usize][x as usize] == 9 {
                     mines += 1;
                 }
             }
@@ -79,12 +98,16 @@ impl MinesWeeper {
             return Err(BoardError::InvalidMove);
         }
 
-        if self.board[y as usize][x as usize] != 9 {
+        if !self.masked_board[y as usize][x as usize] {
             return Err(BoardError::MoveAlreadyPlayed);
         }
 
-        if self.mines_board[y as usize][x as usize] {
-            self.game_over = true;
+        if self.marked_board[y as usize][x as usize] {
+            return Err(BoardError::MoveAlreadyMarked);
+        }
+
+        if self.board[y as usize][x as usize] == 9 {
+            self.game_lost = true;
             return Ok(());
         }
 
@@ -92,28 +115,30 @@ impl MinesWeeper {
             self.init_board(x, y);
         }
 
-        self.board[y as usize][x as usize] = self.count_mines_surrounding(x, y);
-
         Ok(())
     }
 
     pub fn toggle_mark(&mut self, x: u32, y: u32) -> Result<(), BoardError> {
+        if !self.initialized {
+            return Err(BoardError::GameNotInitialized);
+        }
+
         if x >= self.width || y >= self.height {
             return Err(BoardError::InvalidMove);
         }
 
-        if self.board[y as usize][x as usize] != 9 {
+        if !self.masked_board[y as usize][x as usize] {
             return Err(BoardError::MoveAlreadyPlayed);
         }
 
-        match self.marked[y as usize][x as usize] {
+        match self.marked_board[y as usize][x as usize] {
             true => {
-                self.marked[y as usize][x as usize] = true;
-                self.total_marked += 1;
+                self.marked_board[y as usize][x as usize] = false;
+                self.total_marked -= 1;
             }
             false => {
-                self.marked[y as usize][x as usize] = false;
-                self.total_marked -= 1;
+                self.marked_board[y as usize][x as usize] = true;
+                self.total_marked += 1;
             }
         }
 
@@ -125,28 +150,36 @@ impl MinesWeeper {
     }
 
     pub fn is_game_over(&self) -> bool {
-        self.game_over
+        self.game_lost || self.game_won
     }
 }
 
 impl Display for MinesWeeper {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        let mut delimiter = String::from("+");
-        for _ in 0..self.height {
-            delimiter.push_str("---+");
-        }
+        let delimiter: String = format!("+{}", "---+".repeat(self.height as usize));
 
         writeln!(f, "{}", delimiter)?;
-        for row in self.board.iter() {
-            write!(f, "|")?;
-            for cell in row.iter() {
-                let cell = match cell {
-                    9 => " ".to_string(),
-                    _ => format!("{}", cell),
+
+        for row in 0..self.height {
+            for col in 0..self.width {
+                let cell = self.board[row as usize][col as usize];
+
+                let cell_str = if self.marked_board[row as usize][col as usize] {
+                    "⚑".to_string()
+                } else if self.masked_board[row as usize][col as usize] {
+                    " ".to_string()
+                } else {
+                    match cell {
+                        9 => "✴".to_string(),
+                        _ => format!("{}", cell),
+                    }
                 };
-                write!(f, " {} |", cell)?;
+
+                write!(f, "| {} ", cell_str)?;
             }
-            writeln!(f, "\n{}", delimiter)?;
+
+            writeln!(f, "|")?;
+            writeln!(f, "{}", delimiter)?;
         }
 
         Ok(())

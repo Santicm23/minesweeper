@@ -2,9 +2,11 @@ mod cli;
 pub mod config;
 pub mod logic;
 
+use std::process;
+
 use clearscreen;
 
-use cli::input::{get_coords, select_game_option};
+use cli::{get_coords, select_game_option};
 use config::constants::args::Args;
 use config::constants::game::PlayingOptions;
 use logic::minesweeper::MinesWeeper;
@@ -29,17 +31,25 @@ fn handle_input(input: PlayingOptions, minesweeper: &mut MinesWeeper) {
         std::process::exit(0);
     }
 
-    let (x, y) = get_coords();
+    loop {
+        let (x, y) = match get_coords() {
+            Ok(coords) => coords,
+            Err("Exit") => break,
+            Err(err) => {
+                println!("Error: {}", err);
+                continue;
+            }
+        };
 
-    match input {
-        PlayingOptions::Reveal => match minesweeper.play(x, y) {
-            Ok(_) => (),
-            Err(_) => println!("error"),
-        },
-        PlayingOptions::Flag => match minesweeper.toggle_mark(x, y) {
-            Ok(_) => (),
-            Err(_) => println!("error"),
-        },
-        _ => (),
+        let res = match input {
+            PlayingOptions::Reveal => minesweeper.play(x, y),
+            PlayingOptions::Flag => minesweeper.toggle_mark(x, y),
+            _ => process::exit(1),
+        };
+
+        match res {
+            Err(err) => println!("Error: {}", err),
+            _ => break,
+        }
     }
 }
