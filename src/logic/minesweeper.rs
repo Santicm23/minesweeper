@@ -2,7 +2,7 @@ use std::fmt::{Display, Formatter};
 
 use rand::Rng;
 
-use crate::logic::errors::BoardError;
+use crate::config::constants::errors::BoardError;
 
 pub struct MinesWeeper {
     width: u32,
@@ -43,7 +43,7 @@ impl MinesWeeper {
                 continue;
             }
 
-            self.mines_board[y as usize][x as usize] = true;
+            self.mines_board[i as usize][j as usize] = true;
             mines_to_place -= 1;
         }
         self.initialized = true;
@@ -79,17 +79,17 @@ impl MinesWeeper {
             return Err(BoardError::InvalidMove);
         }
 
-        if !self.initialized {
-            self.init_board(x, y);
-        }
-
-        if self.board[y as usize][x as usize] != 0 {
+        if self.board[y as usize][x as usize] != 9 {
             return Err(BoardError::MoveAlreadyPlayed);
         }
 
         if self.mines_board[y as usize][x as usize] {
             self.game_over = true;
             return Ok(());
+        }
+
+        if !self.initialized {
+            self.init_board(x, y);
         }
 
         self.board[y as usize][x as usize] = self.count_mines_surrounding(x, y);
@@ -102,7 +102,7 @@ impl MinesWeeper {
             return Err(BoardError::InvalidMove);
         }
 
-        if self.board[y as usize][x as usize] != 0 {
+        if self.board[y as usize][x as usize] != 9 {
             return Err(BoardError::MoveAlreadyPlayed);
         }
 
