@@ -4,14 +4,19 @@ use regex::Regex;
 
 use crate::config::constants::game::PlayingOptions;
 
-pub fn select_game_option() -> PlayingOptions {
+pub fn select_game_option(previous: &PlayingOptions) -> PlayingOptions {
     let options = vec![
         PlayingOptions::Reveal,
         PlayingOptions::Flag,
         PlayingOptions::Quit,
     ];
 
-    Select::new("Choose an option", options).prompt().unwrap()
+    let cursor = options.iter().position(|x| x == previous).unwrap();
+
+    Select::new("Choose an option", options)
+        .with_starting_cursor(cursor)
+        .prompt()
+        .unwrap()
 }
 
 pub fn get_coords() -> Result<(u32, u32), &'static str> {

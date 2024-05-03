@@ -14,14 +14,18 @@ use logic::MinesWeeper;
 pub fn run(args: Args) {
     let mut minesweeper = MinesWeeper::new(args.width, args.height, args.mines);
 
+    let mut previous = PlayingOptions::Reveal;
+
     while !minesweeper.is_game_over() {
         clearscreen::clear().unwrap();
 
         print!("{}", minesweeper);
 
-        let input = select_game_option();
+        let input = select_game_option(&previous);
 
-        handle_input(input, &mut minesweeper);
+        previous = input;
+
+        handle_input(&previous, &mut minesweeper);
     }
 
     clearscreen::clear().unwrap();
@@ -35,7 +39,7 @@ pub fn run(args: Args) {
     }
 }
 
-fn handle_input(input: PlayingOptions, minesweeper: &mut MinesWeeper) {
+fn handle_input(input: &PlayingOptions, minesweeper: &mut MinesWeeper) {
     if let PlayingOptions::Quit = input {
         println!("Quitting game...");
         std::process::exit(0);

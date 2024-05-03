@@ -94,9 +94,12 @@ impl MinesWeeper {
     }
 
     pub fn play(&mut self, x: u32, y: u32) -> Result<(), BoardError> {
-        if x >= self.width || y >= self.height {
+        if 1 > x || x > self.width || 1 > y || y > self.height {
             return Err(BoardError::InvalidMove);
         }
+
+        let x = x - 1;
+        let y = y - 1;
 
         if !self.masked_board[y as usize][x as usize] {
             return Err(BoardError::MoveAlreadyPlayed);
@@ -116,6 +119,13 @@ impl MinesWeeper {
     }
 
     pub fn toggle_mark(&mut self, x: u32, y: u32) -> Result<(), BoardError> {
+        if 1 > x || x > self.width || 1 > y || y > self.height {
+            return Err(BoardError::InvalidMove);
+        }
+
+        let x = x - 1;
+        let y = y - 1;
+
         if !self.initialized {
             return Err(BoardError::GameNotInitialized);
         }
