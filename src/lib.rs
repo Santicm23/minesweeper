@@ -7,9 +7,9 @@ use std::process;
 use clearscreen;
 
 use cli::{get_coords, select_game_option};
-use config::constants::args::Args;
-use config::constants::game::PlayingOptions;
-use logic::minesweeper::MinesWeeper;
+use config::constants::Args;
+use config::constants::PlayingOptions;
+use logic::MinesWeeper;
 
 pub fn run(args: Args) {
     let mut minesweeper = MinesWeeper::new(args.width, args.height, args.mines);
@@ -22,6 +22,16 @@ pub fn run(args: Args) {
         let input = select_game_option();
 
         handle_input(input, &mut minesweeper);
+    }
+
+    clearscreen::clear().unwrap();
+
+    print!("{}", minesweeper);
+
+    if minesweeper.game_won {
+        println!("Congratulations! You won!");
+    } else {
+        println!("Game over! You lost!");
     }
 }
 

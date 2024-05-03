@@ -59,11 +59,11 @@ impl MinesWeeper {
             let i = rng.gen_range(0..self.width);
             let j = rng.gen_range(0..self.height);
 
-            if self.board[i as usize][j as usize] == 9 || (i == x && j == y) {
+            if self.board[j as usize][i as usize] == 9 || (i == x && j == y) {
                 continue;
             }
 
-            self.board[i as usize][j as usize] = 9;
+            self.board[j as usize][i as usize] = 9;
             mines_to_place -= 1;
         }
     }
@@ -106,14 +106,11 @@ impl MinesWeeper {
             return Err(BoardError::MoveAlreadyMarked);
         }
 
-        if self.board[y as usize][x as usize] == 9 {
-            self.game_lost = true;
-            return Ok(());
-        }
-
         if !self.initialized {
             self.init_board(x, y);
         }
+
+        self.update_game_state(x, y);
 
         Ok(())
     }
@@ -143,6 +140,50 @@ impl MinesWeeper {
         }
 
         Ok(())
+    }
+
+    fn update_game_state(&mut self, x: u32, y: u32) {
+        if self.board[y as usize][x as usize] == 9 {
+            self.game_lost = true;
+            self.unmask_board();
+            return;
+        }
+
+        self.masked_board[y as usize][x as usize] = false;
+
+        if self.has_won() {
+            self.game_won = true;
+            self.unmask_board();
+            self.mark_all_mines();
+        }
+    }
+
+    fn has_won(&self) -> bool {
+        for i in 0..self.height {
+            for j in 0..self.width {
+                if !(self.masked_board[i as usize][j as usize]
+                    == (self.board[i as usize][j as usize] == 9))
+                {
+                    return false;
+                }
+            }
+        }
+
+        true
+    }
+
+    fn unmask_board(&mut self) {
+        self.masked_board = vec![vec![false; self.width as usize]; self.height as usize];
+    }
+
+    fn mark_all_mines(&mut self) {
+        for i in 0..self.height {
+            for j in 0..self.width {
+                if self.board[i as usize][j as usize] == 9 {
+                    self.marked_board[i as usize][j as usize] = true;
+                }
+            }
+        }
     }
 
     pub fn mines_left(&self) -> u32 {

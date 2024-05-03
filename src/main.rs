@@ -1,6 +1,6 @@
 use std::env;
 
-use minesweeper_lib::config::constants::args::Args;
+use minesweeper_lib::config::constants::Args;
 use minesweeper_lib::run;
 
 fn main() {
