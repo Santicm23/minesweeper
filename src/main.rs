@@ -10,9 +10,9 @@ fn main() {
         std::process::exit(1);
     }
 
-    let width: u32 = args[1].parse().expect("Width must be a unsigned number");
-    let height: u32 = args[2].parse().expect("Height must be a unsigned number");
-    let mines: u32 = args[3].parse().expect("Mines must be a unsigned number");
+    let width: usize = args[1].parse().expect("Width must be a unsigned number");
+    let height: usize = args[2].parse().expect("Height must be a unsigned number");
+    let mines: usize = args[3].parse().expect("Mines must be a unsigned number");
 
     let args = Args::new(width, height, mines).unwrap_or_else(|err| {
         eprintln!("Problem parsing arguments: {}", err);

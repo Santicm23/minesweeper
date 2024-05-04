@@ -19,7 +19,7 @@ pub fn select_game_option(previous: &PlayingOptions) -> PlayingOptions {
         .unwrap()
 }
 
-pub fn get_coords() -> Result<(u32, u32), &'static str> {
+pub fn get_coords() -> Result<(usize, usize), &'static str> {
     let split;
 
     let text = Text::new("Enter the coordinates (x,y): ").prompt().unwrap();
@@ -38,6 +38,6 @@ pub fn get_coords() -> Result<(u32, u32), &'static str> {
     split = text
         .split(",")
         .map(|s| s.parse().unwrap())
-        .collect::<Vec<u32>>();
+        .collect::<Vec<usize>>();
     Ok((split[0], split[1]))
 }

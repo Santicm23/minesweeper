@@ -5,27 +5,27 @@ use rand::Rng;
 use crate::config::constants::errors::BoardError;
 
 pub struct MinesWeeper {
-    width: u32,
-    height: u32,
-    mines: u32,
+    width: usize,
+    height: usize,
+    mines: usize,
     board: Vec<Vec<u8>>,
     masked_board: Vec<Vec<bool>>,
     marked_board: Vec<Vec<bool>>,
-    total_marked: u32,
+    total_marked: usize,
     initialized: bool,
     pub game_lost: bool,
     pub game_won: bool,
 }
 
 impl MinesWeeper {
-    pub fn new(width: u32, height: u32, mines: u32) -> Self {
+    pub fn new(width: usize, height: usize, mines: usize) -> Self {
         Self {
             width,
             height,
             mines,
-            board: vec![vec![0; width as usize]; height as usize],
-            masked_board: vec![vec![true; width as usize]; height as usize],
-            marked_board: vec![vec![false; width as usize]; height as usize],
+            board: vec![vec![0; width]; height],
+            masked_board: vec![vec![true; width]; height],
+            marked_board: vec![vec![false; width]; height],
             total_marked: 0,
             initialized: false,
             game_lost: false,
@@ -33,25 +33,25 @@ impl MinesWeeper {
         }
     }
 
-    fn init_board(&mut self, x: u32, y: u32) {
+    fn init_board(&mut self, x: usize, y: usize) {
         self.populate_board(x, y);
 
-        self.masked_board[y as usize][x as usize] = false;
+        self.masked_board[y][x] = false;
 
         for i in 0..self.height {
             for j in 0..self.width {
-                if self.board[i as usize][j as usize] == 9 {
+                if self.board[i][j] == 9 {
                     continue;
                 }
 
-                self.board[i as usize][j as usize] = self.count_mines_surrounding(j, i);
+                self.board[i][j] = self.count_mines_surrounding(j, i);
             }
         }
 
         self.initialized = true;
     }
 
-    fn populate_board(&mut self, x: u32, y: u32) {
+    fn populate_board(&mut self, x: usize, y: usize) {
         let mut rng = rand::thread_rng();
 
         let mut mines_to_place = self.mines;
@@ -59,16 +59,16 @@ impl MinesWeeper {
             let i = rng.gen_range(0..self.width);
             let j = rng.gen_range(0..self.height);
 
-            if self.board[j as usize][i as usize] == 9 || (i == x && j == y) {
+            if self.board[j][i] == 9 || (i == x && j == y) {
                 continue;
             }
 
-            self.board[j as usize][i as usize] = 9;
+            self.board[j][i] = 9;
             mines_to_place -= 1;
         }
     }
 
-    fn count_mines_surrounding(&mut self, x: u32, y: u32) -> u8 {
+    fn count_mines_surrounding(&mut self, x: usize, y: usize) -> u8 {
         let mut mines = 0;
 
         for i in -1..=1 {
@@ -77,10 +77,10 @@ impl MinesWeeper {
                     continue;
                 }
 
-                let x = x as i32 + i;
-                let y = y as i32 + j;
+                let x = x as isize + i;
+                let y = y as isize + j;
 
-                if x < 0 || y < 0 || x >= self.width as i32 || y >= self.height as i32 {
+                if x < 0 || y < 0 || x >= self.width as isize || y >= self.height as isize {
                     continue;
                 }
 
@@ -93,7 +93,7 @@ impl MinesWeeper {
         mines
     }
 
-    pub fn play(&mut self, x: u32, y: u32) -> Result<(), BoardError> {
+    pub fn play(&mut self, x: usize, y: usize) -> Result<(), BoardError> {
         if 1 > x || x > self.width || 1 > y || y > self.height {
             return Err(BoardError::InvalidMove);
         }
@@ -101,11 +101,11 @@ impl MinesWeeper {
         let x = x - 1;
         let y = y - 1;
 
-        if !self.masked_board[y as usize][x as usize] {
+        if !self.masked_board[y][x] {
             return Err(BoardError::MoveAlreadyPlayed);
         }
 
-        if self.marked_board[y as usize][x as usize] {
+        if self.marked_board[y][x] {
             return Err(BoardError::MoveAlreadyMarked);
         }
 
@@ -118,7 +118,7 @@ impl MinesWeeper {
         Ok(())
     }
 
-    pub fn toggle_mark(&mut self, x: u32, y: u32) -> Result<(), BoardError> {
+    pub fn toggle_mark(&mut self, x: usize, y: usize) -> Result<(), BoardError> {
         if 1 > x || x > self.width || 1 > y || y > self.height {
             return Err(BoardError::InvalidMove);
         }
@@ -134,17 +134,17 @@ impl MinesWeeper {
             return Err(BoardError::InvalidMove);
         }
 
-        if !self.masked_board[y as usize][x as usize] {
+        if !self.masked_board[y][x] {
             return Err(BoardError::MoveAlreadyPlayed);
         }
 
-        match self.marked_board[y as usize][x as usize] {
+        match self.marked_board[y][x] {
             true => {
-                self.marked_board[y as usize][x as usize] = false;
+                self.marked_board[y][x] = false;
                 self.total_marked -= 1;
             }
             false => {
-                self.marked_board[y as usize][x as usize] = true;
+                self.marked_board[y][x] = true;
                 self.total_marked += 1;
             }
         }
@@ -152,14 +152,14 @@ impl MinesWeeper {
         Ok(())
     }
 
-    fn update_game_state(&mut self, x: u32, y: u32) {
-        if self.board[y as usize][x as usize] == 9 {
+    fn update_game_state(&mut self, x: usize, y: usize) {
+        if self.board[y][x] == 9 {
             self.game_lost = true;
             self.unmask_board();
             return;
         }
 
-        self.masked_board[y as usize][x as usize] = false;
+        self.masked_board[y][x] = false;
 
         if self.has_won() {
             self.game_won = true;
@@ -171,9 +171,7 @@ impl MinesWeeper {
     fn has_won(&self) -> bool {
         for i in 0..self.height {
             for j in 0..self.width {
-                if !(self.masked_board[i as usize][j as usize]
-                    == (self.board[i as usize][j as usize] == 9))
-                {
+                if !(self.masked_board[i][j] == (self.board[i][j] == 9)) {
                     return false;
                 }
             }
@@ -183,20 +181,20 @@ impl MinesWeeper {
     }
 
     fn unmask_board(&mut self) {
-        self.masked_board = vec![vec![false; self.width as usize]; self.height as usize];
+        self.masked_board = vec![vec![false; self.width]; self.height];
     }
 
     fn mark_all_mines(&mut self) {
         for i in 0..self.height {
             for j in 0..self.width {
-                if self.board[i as usize][j as usize] == 9 {
-                    self.marked_board[i as usize][j as usize] = true;
+                if self.board[i][j] == 9 {
+                    self.marked_board[i][j] = true;
                 }
             }
         }
     }
 
-    pub fn mines_left(&self) -> u32 {
+    pub fn mines_left(&self) -> usize {
         self.mines - self.total_marked
     }
 
@@ -207,17 +205,17 @@ impl MinesWeeper {
 
 impl Display for MinesWeeper {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        let delimiter: String = format!("+{}", "---+".repeat(self.height as usize));
+        let delimiter: String = format!("+{}", "---+".repeat(self.height));
 
         writeln!(f, "{}", delimiter)?;
 
         for row in 0..self.height {
             for col in 0..self.width {
-                let cell = self.board[row as usize][col as usize];
+                let cell = self.board[row][col];
 
-                let cell_str = if self.marked_board[row as usize][col as usize] {
+                let cell_str = if self.marked_board[row][col] {
                     "⚑".to_string()
-                } else if self.masked_board[row as usize][col as usize] {
+                } else if self.masked_board[row][col] {
                     " ".to_string()
                 } else {
                     match cell {
