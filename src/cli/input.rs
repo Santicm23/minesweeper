@@ -11,7 +11,7 @@ pub fn select_game_option(previous: &PlayingOptions) -> PlayingOptions {
         PlayingOptions::Quit,
     ];
 
-    let cursor = options.iter().position(|x| x == previous).unwrap();
+    let cursor = options.iter().position(|x| *x == *previous).unwrap();
 
     Select::new("Choose an option", options)
         .with_starting_cursor(cursor)
